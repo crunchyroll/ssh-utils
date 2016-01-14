@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# cpennello 2015-02-04 Find SSH authorization socket for $USER and print
+# its path to standard out.  If not found, return exit status 1.
+
+set -e
+
+search() {
+  basedir=$1
+  dirprefix=$2
+  sockprefix=$3
+
+  # -maxdepth 1 since we can't look inside /tmp/lost+found on some hosts
+  # without root privileges.  In general though, we just don't need to
+  # look more deeply than the first level of directories in $basedir.
+  sock_dirs=`find $basedir -maxdepth 1 -type d -and -user $USER \
+    -and -name "$dirprefix*"`
+  if [ -z "$sock_dirs" ]; then
+    exit 1
+  fi
+
+  # Note that if $sockprefix is unspecified, this still works.
+  socks=`find $sock_dirs -type s -and -name "$sockprefix*"`
+  if [ -z "$socks" ]; then
+    exit 1
+  fi
+
+  # Print the path to the first one only if multiple were found.
+  sock=`echo "$socks" | head -n 1`
+  echo $sock
+}
+
+search_Darwin() {
+  # Macs have other weird sockets in directories with this prefix.  We
+  # want only Listeners.
+  search /private/tmp com.apple.launchd. Listeners
+}
+
+search_Linux() {
+  search /tmp ssh-
+}
+
+search_`uname`

@@ -1,0 +1,46 @@
+#!/bin/sh
+
+# cpennello 2015-02-17 Find private keys in user's home .ssh directory.
+# Besides the default key names used by ssh-add, also look for keys
+# ending in _ssh_key.  For keys that are found, ensure they are
+# encrypted.  If any are not encrypted, print message to standard error
+# and exit with status 1.  Otherwise, print paths to standard out on a
+# single line.  (Ideal for passing as arguments to ssh-add.)  If
+# relevant directories or keys are not found, print message to standard
+# error and exit with status 127.
+
+set -e
+self=`basename $0`
+
+# Check to make sure .ssh directory is around.  Exit if it's not.
+base=$HOME/.ssh
+if [ ! -d $base ]; then
+  >&2 echo "$self: no directory $base"
+  exit 127
+fi
+
+# Look for keys.  Exit if none found.
+keys=`find $base \( \
+  -name id_rsa -o \
+  -name id_dsa -o \
+  -name identity -o \
+  -name '[^.]*_ssh_key' \
+  \)`
+if [ -z "$keys" ]; then
+  >&2 echo "$self: no keys found"
+  exit 127
+fi
+
+# Ensure keys are encrypted.  Log and exit if any are not.
+bad=0
+for key in $keys; do
+  if ! grep -q ENCRYPTED $key; then
+    >&2 echo "$self: error: $key unencrypted"
+    bad=1
+  fi
+done
+if [ 0 -ne $bad ]; then
+  exit 1
+fi
+
+echo $keys

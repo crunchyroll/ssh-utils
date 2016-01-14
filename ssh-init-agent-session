@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# cpennello 2014-10-16 Start and connect to ssh-agent and add user's
+# private keys found by ssh-check-private-keys.
+
+set -e
+# We _could_ eval `ssh-agent`, but it also adds the PID to the
+# environment and does some unnecessary echoing.
+ssh-agent >/dev/null
+mydir=`dirname $0`
+eval `$mydir/ssh-reconnect-agent-session`
+keys=`$mydir/ssh-check-private-keys`
+ssh-add $keys

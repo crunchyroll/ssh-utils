@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# cpennello 2014-06-04 Look for existing ssh-agent session.  If found,
+# print to standard out shell command for setting environment variable
+# to reconnect to the found session.  Else, print message to standard
+# error and exit with status 1.
+
+set +e
+self=`basename $0`
+mydir=`dirname $0`
+findsock=ssh-find-auth-sock
+findsock_out=`$mydir/$findsock`
+findsock_exit=$?
+set -e
+
+if [ $findsock_exit -ne 0 ]; then
+  >&2 echo "$self: $findsock exited with status $findsock_exit"
+  >&2 echo "$self: session not found; failed to reconnect agent session"
+  exit $findsock_exit
+fi
+
+echo "export SSH_AUTH_SOCK=$findsock_out"
